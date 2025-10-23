@@ -1,0 +1,61 @@
+
+VOLATILITY ESTIMATORS: COMPREHENSIVE ANALYSIS REPORT
+Generated: 2025-10-23 12:19:56
+
+EXECUTIVE SUMMARY:
+-----------------
+This analysis evaluates 5 prominent volatility estimators across simulated and real market data.
+Key findings:
+
+1. YANG-ZHANG emerges as the most robust estimator overall, handling both drift and overnight jumps effectively.
+
+2. ROGERS-SATCHELL performs best in trending markets and is drift-independent.
+
+3. PARKINSON offers good efficiency with only high/low data.
+
+4. GARMAN-KLASS provides maximum efficiency with full OHLC data but is sensitive to drift.
+
+5. CLOSE-TO-CLOSE remains useful for legacy data but is inefficient.
+
+RECOMMENDATIONS:
+---------------
+PRIMARY RECOMMENDATION: Use Yang-Zhang estimator for most applications.
+
+SCENARIO-SPECIFIC GUIDANCE:
+
+1. RISK MANAGEMENT & OPTIONS PRICING:
+   • Primary: Yang-Zhang
+   • Alternative: Rogers-Satchell
+
+2. HIGH-FREQUENCY TRADING:
+   • Primary: Parkinson  
+   • Alternative: Garman-Klass
+
+3. ACADEMIC RESEARCH:
+   • Primary: Yang-Zhang
+   • Alternative: Close-to-Close (for comparison)
+
+4. LEGACY DATA ANALYSIS:
+   • Primary: Close-to-Close
+   • Only option when only closing prices available
+
+DATA REQUIREMENTS:
+-----------------
+• Close-to-Close: Close prices only
+• Parkinson: High/Low prices  
+• Garman-Klass: Full OHLC data
+• Rogers-Satchell: Full OHLC data
+• Yang-Zhang: Full OHLC data
+
+IMPLEMENTATION NOTES:
+--------------------
+- All estimators implemented with 30-day window as standard
+- Results are annualized assuming 252 trading days
+- Yang-Zhang requires minimum 31 days of data
+- Consider realized variance from high-frequency data as benchmark when available
+
+CONCLUSION:
+----------
+The choice of volatility estimator should consider data availability, market conditions, 
+and specific use case. Yang-Zhang provides the best balance of accuracy and robustness 
+for most practical applications.
