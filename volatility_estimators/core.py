@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from typing import Union, Optional, Dict
 import warnings
-
 import numpy as np
 
 class VolatilityEstimators:
@@ -19,76 +18,73 @@ class VolatilityEstimators:
 
     def parkinson(self, highs, lows):
         """Parkinson (1980) - High/Low range estimator"""
-        log_high = np.log(highs)
-        log_low = np.log(lows)
-        recent_high = log_high.iloc[-self.window:]
-        recent_low = log_low.iloc[-self.window:]
-
-        squared_ranges = (recent_high - recent_low) ** 2
-        variance = (1 / (4 * self.window * np.log(2))) * np.sum(squared_ranges)
+        # Formula: σ_P(T) = √(1/T) * √(1/(4ln2) * Σ(ln(H_i/L_i))²)
+        log_hl_ratio = np.log(highs / lows)
+        recent_ratios = log_hl_ratio.iloc[-self.window:]
+        
+        sum_squared_log_ratios = np.sum(recent_ratios ** 2)
+        variance = (1 / (4 * np.log(2))) * (1 / self.window) * sum_squared_log_ratios
         return np.sqrt(variance * self.trading_days)
 
     def garman_klass(self, opens, highs, lows, closes):
         """Garman-Klass (1980) - OHLC estimator"""
-        log_open = np.log(opens)
-        log_high = np.log(highs)
-        log_low = np.log(lows)
-        log_close = np.log(closes)
-
-        o = log_open.iloc[-self.window:]
-        h = log_high.iloc[-self.window:]
-        l = log_low.iloc[-self.window:]
-        c = log_close.iloc[-self.window:]
+        # Formula: σ_GK(T) = √(1/T) * √[Σ(0.5*(ln(H_i/L_i))² - (2ln2-1)*(ln(C_i/O_i))²)]
+        log_hl_ratio = np.log(highs / lows)
+        log_co_ratio = np.log(closes / opens)
         
-        term1 = 0.5 * (h - l) ** 2
-        term2 = (2 * np.log(2) - 1) * (c - o) ** 2
-        variance = (1/self.window) * np.sum(term1 - term2)
+        recent_hl = log_hl_ratio.iloc[-self.window:]
+        recent_co = log_co_ratio.iloc[-self.window:]
+        
+        term1 = 0.5 * (recent_hl ** 2)
+        term2 = (2 * np.log(2) - 1) * (recent_co ** 2)
+        variance = (1 / self.window) * np.sum(term1 - term2)
         return np.sqrt(variance * self.trading_days)
 
     def rogers_satchell(self, opens, highs, lows, closes):
         """Rogers-Satchell (1991) estimator for non-zero mean returns"""
+        # Formula: σ_RS(T) = √(1/T) * √[Σ(ln(H_i/C_i)*ln(H_i/O_i) + ln(L_i/C_i)*ln(L_i/O_i))]
         log_open = np.log(opens)
         log_high = np.log(highs)
         log_low = np.log(lows)
         log_close = np.log(closes)
-
+        
         o = log_open.iloc[-self.window:]
         h = log_high.iloc[-self.window:]
         l = log_low.iloc[-self.window:]
         c = log_close.iloc[-self.window:]
         
-        term1 = (h - c) * (h - o)
-        term2 = (l - c) * (l - o)
-        variance = (1/self.window) * np.sum(term1 + term2)
+        term1 = (h - c) * (h - o)  # ln(H_i/C_i) * ln(H_i/O_i)
+        term2 = (l - c) * (l - o)  # ln(L_i/C_i) * ln(L_i/O_i)
+        variance = (1 / self.window) * np.sum(term1 + term2)
         return np.sqrt(variance * self.trading_days)
 
     def yang_zhang(self, opens, highs, lows, closes):
         """Yang-Zhang (2000) - Overnight/Intraday volatility estimator"""
+        # Formula: σ_YZ(T) = √[σ_co² + kσ_oc² + (1-k)σ_RS²]
         log_open = np.log(opens)
-        log_high = np.log(highs)
-        log_low = np.log(lows)
         log_close = np.log(closes)
-
-        # Overnight returns (close to open)
-        overnight_returns = log_open - log_close.shift(1)
         
-        # Intraday returns (open to close)  
-        intraday_returns = log_close - log_open
+        # Close-to-open returns (overnight)
+        close_to_open = log_open - log_close.shift(1)
+        co_returns = close_to_open.iloc[-self.window:]
         
-        # Calculate components
-        k = 0.34 / (1.34 + (self.window + 1) / (self.window - 1))
+        # Open-to-close returns (intraday)
+        open_to_close = log_close - log_open
+        oc_returns = open_to_close.iloc[-self.window:]
         
-        # Overnight volatility
-        var_overnight = np.var(overnight_returns.iloc[-self.window:], ddof=1)
+        # Calculate components with proper variance (not squared yet)
+        var_co = np.var(co_returns, ddof=1)  # σ_co²
+        var_oc = np.var(oc_returns, ddof=1)  # σ_oc²
         
-        # Open-to-close volatility
-        var_intraday = np.var(intraday_returns.iloc[-self.window:], ddof=1)
+        # Rogers-Satchell component (already squared in the method)
+        rs_variance = self.rogers_satchell(opens, highs, lows, closes) ** 2 / self.trading_days
         
-        # Rogers-Satchell component
-        rs_component = self.rogers_satchell(opens, highs, lows, closes) ** 2 / self.trading_days
+        # k parameter
+        n = len(oc_returns)
+        k = 0.34 / (1.34 + (n + 1) / (n - 1))
         
-        # Yang-Zhang estimator
-        variance = var_overnight + k * var_intraday + (1 - k) * rs_component
+        # Yang-Zhang variance
+        variance = var_co + k * var_oc + (1 - k) * rs_variance
         return np.sqrt(variance * self.trading_days)
 
 class PerformanceMetrics:
@@ -136,7 +132,7 @@ class PerformanceMetrics:
 class DataSimulator:
     """Simulate price paths with known true volatility"""
     
-    def _init_(self, S0=100, mu=0.08, sigma=0.2, seed=42):
+    def __init__(self, S0=100, mu=0.08, sigma=0.2, seed=42):
         self.S0 = S0
         self.mu = mu
         self.sigma = sigma

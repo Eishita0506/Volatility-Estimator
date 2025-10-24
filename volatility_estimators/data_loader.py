@@ -12,6 +12,17 @@ class RealizedVariance:
     def calculate_daily_rv(high_freq_data, frequency='5min'):
         """
         Calculate daily realized variance from high-frequency data
+        
+        Parameters:
+        -----------
+        high_freq_data : pd.DataFrame
+            High-frequency OHLC data
+        frequency : str
+            Sampling frequency ('5min', '15min', '1H')
+            
+        Returns:
+        --------
+        pd.Series : Daily realized variance
         """
         # Calculate returns
         returns = np.log(high_freq_data['Close'] / high_freq_data['Close'].shift(1)).dropna()

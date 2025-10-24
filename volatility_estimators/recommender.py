@@ -3,7 +3,7 @@ class VolatilityRecommender:
     Intelligent recommender for volatility estimator selection
     """
     
-    def _init_(self):
+    def __init__(self):
         self.estimator_profiles = {
             'Close-to-Close': {
                 'data_required': ['close'],
