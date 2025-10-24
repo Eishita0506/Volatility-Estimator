@@ -17,13 +17,14 @@ Useful for quantitative research, portfolio optimization, and risk management.
 
 
 ## Installation
+
 ```bash
-pip install Volatility-Estimators
+pip install Volatility-Estimator
 
 or
 
 ```bash
-git clone https://github.com/Eishita0506/Volatility-Estimators.git
+git clone https://github.com/Eishita0506/Volatility-Estimator.git
 cd volatility-estimators
 pip install -e .
 
@@ -125,4 +126,5 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 **Eishita Bordoloi**  
 📧 eishita2005@gmail.com  
 🔗 [GitHub](https://github.com/Eishita0506)
+
 
